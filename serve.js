@@ -1,49 +1,202 @@
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
-require("dotenv").config();
-const { apiLimiter, authLimiter, aiLimiter, paymentLimiter } = require("./travel-booking-app/server/middleware/rateLimiter");
+const path = require("path");
+
+// Load .env FIRST before any module that depends on env vars
+// override: true ensures fresh values from .env replace stale shell-inherited values
+require("dotenv").config({ override: true });
+
+// Use the server's passport instance so the Google strategy registers on the same passport
+const passport = require("./travel-booking-app/server/node_modules/passport");
+require("./travel-booking-app/server/config/passport");
+const { apiLimiter, authLimiter, aiLimiter, paymentLimiter, faqLimiter } = require("./travel-booking-app/server/middleware/rateLimiter");
+
+// ================= SHARED MONGOOSE INSTANCE =================
+// The server/ directory has its own mongoose in its node_modules.
+// Models use require("mongoose") which resolves to the server's mongoose.
+// We MUST use the SAME instance so that models register on the same
+// connection that serve.js opens. Using the root's mongoose would create
+// two separate instances with two separate connections.
+const mongoose = require("./travel-booking-app/server/node_modules/mongoose");
+
+// ================= LOAD ROUTES & MODELS BEFORE CONNECTION =================
+// Models MUST be compiled before mongoose.connect() so that their
+// NativeCollection.onOpen() is called when the connection opens.
+const userRoutes = require("./travel-booking-app/server/routes/userRoutes");
+const destinationRoutes = require("./travel-booking-app/server/routes/destinationRoutes");
+const bookingRoutes = require("./travel-booking-app/server/routes/bookingRoutes");
+const aiRoutes = require("./travel-booking-app/server/routes/aiRoutes");
+const paymentRoutes = require("./travel-booking-app/server/routes/paymentRoutes");
+const noteRoutes = require("./travel-booking-app/server/routes/noteRoutes");
+const faqRoutes = require("./travel-booking-app/server/routes/faqRoutes");
 
 // ================= MONGOOSE CONNECTION OPTIONS =================
 const mongooseOptions = {
-  maxPoolSize: 100,            // Allow up to 100 concurrent DB connections
-  minPoolSize: 10,             // Keep at least 10 connections warm
-  serverSelectionTimeoutMS: 5000,  // Fail fast if DB is unreachable (5s)
-  socketTimeoutMS: 45000,      // Close idle sockets after 45s
-  family: 4,                   // Prefer IPv4
+  maxPoolSize: 100,
+  minPoolSize: 10,
+  serverSelectionTimeoutMS: 15000,
+  connectTimeoutMS: 10000,
+  socketTimeoutMS: 45000,
+  family: 4,
 };
 
 async function startServer() {
   const app = express();
 
+  // ================= CLEANUP: Kill any stale server on the same port =================
+
   // ================= GLOBAL MIDDLEWARE =================
+  const explicitOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
+    : [];
+
   app.use(cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (server-to-server, curl, health checks)
+      if (!origin) {
+        return callback(null, true);
+      }
+      // Allow any localhost or 127.0.0.1 origin regardless of port (Vite uses dynamic ports)
+      if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        return callback(null, true);
+      }
+      // Allow explicitly configured origins via CORS_ORIGIN env var
+      if (explicitOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      console.warn("⚠️ CORS blocked origin:", origin);
+      callback(null, false);
+    },
     credentials: true,
   }));
   app.use(express.json({ limit: "1mb" }));
 
-  // ================= RATE LIMITING =================
-  app.use("/api", apiLimiter);                           // General: 100 req/15min
-  app.use("/api/auth", authLimiter);                     // Auth: 10 req/15min
-  app.use("/api/ai", aiLimiter);                         // AI: 20 req/min
-  app.use("/api/payment", paymentLimiter);               // Payment: 5 req/min
+  // ================= PASSPORT INITIALIZATION =================
+  app.use(passport.initialize());
 
-  // ================= DATABASE CONNECTION =================
-  await mongoose.connect(process.env.MONGO_URI, mongooseOptions);
-  console.log("✅ MongoDB connected (pool: 100)");
+  // ================= RATE LIMITING =================
+  app.use("/api", apiLimiter);
+  app.use("/api/auth", authLimiter);
+  app.use("/api/ai", aiLimiter);
+  app.use("/api/payment", paymentLimiter);
+  app.use("/api/faq", faqLimiter);                         // FAQ: 5 req/15min
+
+  // ================= CONNECTION STATE =================
+  let dbReady = false;
+
+  // Connection event logging for diagnostics
+  mongoose.connection.on("connected", () => {
+    console.log("🔌 MongoDB driver connected");
+  });
+  mongoose.connection.on("disconnected", () => {
+    console.log("⚠️ MongoDB disconnected");
+    dbReady = false;
+  });
+  mongoose.connection.on("error", (err) => {
+    console.error("❌ MongoDB connection error:", err.message || err);
+  });
+  mongoose.connection.on("reconnected", () => {
+    console.log("✅ MongoDB reconnected");
+    dbReady = true;
+  });
+
+  // Connect and wait for the native driver to be fully ready
+  try {
+    await mongoose.connect(process.env.MONGO_URI, mongooseOptions);
+    // Wait for the underlying MongoDB driver to emit 'open' (fully initialized)
+    await new Promise((resolve) => {
+      if (mongoose.connection.db) {
+        return resolve();
+      }
+      mongoose.connection.once("open", resolve);
+    });
+    dbReady = true;
+    console.log("✅ MongoDB connected — driver fully initialized");
+  } catch (err) {
+    console.error("❌ Failed initial MongoDB connection:", err.message);
+    throw err;
+  }
+
+  // Ensure DB is connected before every request (handles connection drops)
+  app.use(async (req, res, next) => {
+    if (dbReady && mongoose.connection.readyState === 1 && mongoose.connection.db) {
+      return next();
+    }
+    try {
+      // Reconnect if needed
+      await mongoose.connect(process.env.MONGO_URI, mongooseOptions);
+      await new Promise((resolve) => {
+        if (mongoose.connection.db) return resolve();
+        mongoose.connection.once("open", resolve);
+      });
+      dbReady = true;
+      next();
+    } catch (err) {
+      console.error("❌ Database middleware error:", err.message);
+      res.status(500).json({ message: "Database connection failed" });
+    }
+  });
+
+  // ================= SERVE FRONTEND (production) =================
+  const clientDist = path.join(__dirname, "travel-booking-app", "client", "dist");
+  if (process.env.NODE_ENV === "production") {
+    // Serve the built frontend as static files
+    app.use(express.static(clientDist));
+    console.log("📦 Serving frontend from:", clientDist);
+  }
+
+  // ================= HEALTH CHECK =================
+  app.get("/api/health", async (req, res) => {
+    let dbTest = "not tested";
+    try {
+      // Run a real query to verify the connection works end-to-end
+      const collections = await mongoose.connection.db.listCollections().toArray();
+      const collectionNames = collections.map(c => c.name);
+      const hasUsersCollection = collectionNames.includes("users");
+      if (hasUsersCollection) {
+        const userCount = await mongoose.connection.db.collection("users").countDocuments();
+        dbTest = `collections=[${collectionNames.join(",")}], users=${userCount}`;
+      } else {
+        dbTest = `collections=[${collectionNames.join(",")}], no-users-collection`;
+      }
+    } catch (err) {
+      dbTest = `error: ${err.message}`;
+    }
+
+    res.json({
+      status: "ok",
+      mongodb: {
+        state: ["disconnected", "connected", "connecting", "disconnecting"][mongoose.connection.readyState] || "unknown",
+        readyState: mongoose.connection.readyState,
+        hasDb: !!mongoose.connection.db,
+        dbReady,
+        dbTest,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  });
 
   // ================= ROUTES =================
-  app.use("/api/auth", require("./travel-booking-app/server/routes/userRoutes"));
-  app.use("/api/destinations", require("./travel-booking-app/server/routes/destinationRoutes"));
-  app.use("/api/bookings", require("./travel-booking-app/server/routes/bookingRoutes"));
-  app.use("/api/ai", require("./travel-booking-app/server/routes/aiRoutes"));
-  app.use("/api/payment", require("./travel-booking-app/server/routes/paymentRoutes"));
+  app.use("/api/auth", userRoutes);
+  app.use("/api/destinations", destinationRoutes);
+  app.use("/api/bookings", bookingRoutes);
+  app.use("/api/ai", aiRoutes);
+  app.use("/api/payment", paymentRoutes);
+  app.use("/api/notes", noteRoutes);
+  app.use("/api/faq", faqRoutes);
 
-  // ================= HOME ROUTE =================
-  app.get("/", (req, res) => {
-    res.send("API is running 🚀");
-  });
+  // ================= SPA FALLBACK (production) =================
+  // For any non-API route, serve index.html (enables React Router client-side routing)
+  if (process.env.NODE_ENV === "production") {
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(clientDist, "index.html"));
+    });
+  } else {
+    // Dev: simple home route
+    app.get("/", (req, res) => {
+      res.json({ message: "TravelBook API is running 🚀", version: "1.0.0" });
+    });
+  }
 
   // ================= 404 HANDLER =================
   app.use((req, res) => {
@@ -52,23 +205,30 @@ async function startServer() {
 
   // ================= GLOBAL ERROR HANDLER =================
   app.use((err, req, res, next) => {
-    console.error("Unhandled error:", err);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("❌ Unhandled error:", err.message || err);
+    if (process.env.NODE_ENV !== "production") {
+      console.error(err.stack);
+    }
+    res.status(err.status || 500).json({
+      message: err.message || "Internal server error",
+      ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
+    });
   });
 
   // ================= START SERVER =================
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.FORCE_PORT || process.env.PORT || 3000;
   app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`   Health: http://localhost:${PORT}/api/health`);
   });
 }
 
 startServer().catch((err) => {
-  console.error("❌ Server failed to start:", err);
+  console.error("❌ Server failed to start:", err.message || err);
   process.exit(1);
 });
 
 // Handle unhandled promise rejections globally (safety net)
 process.on("unhandledRejection", (err) => {
-  console.error("❌ Unhandled Rejection:", err);
+  console.error("❌ Unhandled Rejection:", err.message || err);
 });

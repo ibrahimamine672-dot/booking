@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon serve.js",
+    "build": "cd travel-booking-app/client && npm install && npm run build",
     "start": "node serve.js"
   },
   "keywords": [],
@@ -12,7 +13,6 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.100.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",

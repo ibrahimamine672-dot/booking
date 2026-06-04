@@ -1,6 +1,13 @@
-const API_BASE = '/api';
+// Production: uses VITE_API_URL from .env or Vercel dashboard.
+// Local dev: falls back to localhost:3000 (where the Express backend runs).
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const getToken = () => localStorage.getItem('token');
+
+let onAuthError = null;
+export function setOnAuthError(handler) {
+  onAuthError = handler;
+}
 
 async function request(endpoint, options = {}) {
   const token = getToken();
@@ -21,30 +28,47 @@ async function request(endpoint, options = {}) {
     throw new Error('Server returned an invalid response');
   }
 
-  if (!res.ok) throw new Error(data.message || data.error || 'Request failed');
+  if (!res.ok) {
+    // Clear invalid/expired tokens and notify the app
+    if (res.status === 401 && token) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      if (onAuthError) onAuthError(data.message || 'Session expired');
+    }
+    throw new Error(data.message || data.error || 'Request failed');
+  }
   return data;
 }
 
 // Auth
-export const register = (data) => request('/auth/register', { method: 'POST', body: JSON.stringify(data) });
-export const login = (data) => request('/auth/login', { method: 'POST', body: JSON.stringify(data) });
+export const register = (data) => request('/api/auth/register', { method: 'POST', body: JSON.stringify(data) });
+export const login = (data) => request('/api/auth/login', { method: 'POST', body: JSON.stringify(data) });
+export const forgotPassword = (email) => request('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
+export const resetPassword = (token, password) => request('/api/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) });
 
 // Destinations
-export const getDestinations = () => request('/destinations');
-export const getDestination = (id) => request(`/destinations/${id}`);
-export const createDestination = (data) => request('/destinations', { method: 'POST', body: JSON.stringify(data) });
-export const deleteDestination = (id) => request(`/destinations/${id}`, { method: 'DELETE' });
+export const getDestinations = () => request('/api/destinations');
+export const getDestination = (id) => request(`/api/destinations/${id}`);
+export const createDestination = (data) => request('/api/destinations', { method: 'POST', body: JSON.stringify(data) });
+export const deleteDestination = (id) => request(`/api/destinations/${id}`, { method: 'DELETE' });
 
 // Bookings
-export const getBookings = () => request('/bookings');
-export const createBooking = (data) => request('/bookings', { method: 'POST', body: JSON.stringify(data) });
+export const getBookings = () => request('/api/bookings');
+export const createBooking = (data) => request('/api/bookings', { method: 'POST', body: JSON.stringify(data) });
 
 // AI Chat
-export const chatAI = (message) => request('/ai/chat', { method: 'POST', body: JSON.stringify({ message }) });
+export const chatAI = (message) => request('/api/ai/chat', { method: 'POST', body: JSON.stringify({ message }) });
+
+// Notes
+export const getNotes = () => request('/api/notes');
+export const createNote = (content) => request('/api/notes', { method: 'POST', body: JSON.stringify({ content }) });
+
+// FAQ / Contact
+export const sendFAQContact = (data) => request('/api/faq/ask', { method: 'POST', body: JSON.stringify(data) });
 
 // Payment Checkout
 export const checkout = (items, totalAmount, currency = 'USD') =>
-  request('/payment/checkout', {
+  request('/api/payment/checkout', {
     method: 'POST',
     body: JSON.stringify({ items, totalAmount, currency }),
   });

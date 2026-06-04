@@ -44,4 +44,15 @@ const paymentLimiter = rateLimit({
   },
 });
 
-module.exports = { apiLimiter, authLimiter, aiLimiter, paymentLimiter };
+// Limiter for FAQ / contact form — 5 requests per 15 minutes per IP (prevents email spam)
+const faqLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message: "Too many contact submissions, please try again later.",
+  },
+});
+
+module.exports = { apiLimiter, authLimiter, aiLimiter, paymentLimiter, faqLimiter };

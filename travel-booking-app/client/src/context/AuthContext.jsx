@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { login as apiLogin, register as apiRegister } from '../services/api';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { login as apiLogin, register as apiRegister, setOnAuthError } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -20,6 +20,16 @@ export function AuthProvider({ children }) {
     }
     setLoading(false);
   }, []);
+
+  // Global handler: when any API call gets a 401, clear user state
+  const handleAuthError = useCallback((message) => {
+    setUser(null);
+  }, []);
+
+  useEffect(() => {
+    setOnAuthError(handleAuthError);
+    return () => setOnAuthError(null);
+  }, [handleAuthError]);
 
   const login = async (email, password) => {
     const data = await apiLogin({ email, password });

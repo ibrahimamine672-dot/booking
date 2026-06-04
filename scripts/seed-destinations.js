@@ -1,7 +1,17 @@
 // Seed script — run with: node scripts/seed-destinations.js
 // Requires the backend server to be running on port 3000
+// This script will:
+//   1. Register a test user (if not already registered)
+//   2. Login to get an auth token
+//   3. Seed all destinations using the token
 
-const API = 'http://localhost:3000/api/destinations';
+const API_BASE = 'http://localhost:3000/api';
+
+const TEST_USER = {
+  name: 'Seed Admin',
+  email: 'seed@travelbook.local',
+  password: 'seedpass123',
+};
 
 const destinations = [
   // 🇲🇦 Moroccan Destinations
@@ -96,22 +106,68 @@ const destinations = [
   },
 ];
 
+async function api(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+    ...options,
+  });
+  const data = await res.json();
+  return { ok: res.ok, status: res.status, data };
+}
+
+async function getToken() {
+  // Try registering first (fails silently if user already exists)
+  await api('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(TEST_USER),
+  });
+
+  // Login to get a token
+  const { ok, data } = await api('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email: TEST_USER.email, password: TEST_USER.password }),
+  });
+
+  if (!ok) {
+    throw new Error(`Login failed: ${data.message || JSON.stringify(data)}`);
+  }
+
+  console.log(`  🔑 Logged in as ${TEST_USER.email}`);
+  return data.token;
+}
+
 async function seed() {
-  console.log(`Seeding ${destinations.length} destinations...\n`);
+  console.log('⏳ Authenticating...\n');
+
+  let token;
+  try {
+    token = await getToken();
+  } catch (err) {
+    console.error(`  ❌ Authentication failed: ${err.message}`);
+    console.error('  Make sure the server is running on port 3000.');
+    process.exit(1);
+  }
+
+  console.log(`\n🌍 Seeding ${destinations.length} destinations...\n`);
+
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
 
   for (const dest of destinations) {
     try {
-      const res = await fetch(API, {
+      const res = await fetch(`${API_BASE}/destinations`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(dest),
       });
       if (res.ok) {
         const created = await res.json();
         console.log(`  ✅ ${created.name} (${created.country})`);
       } else {
-        const err = await res.text();
-        console.log(`  ❌ ${dest.name} — ${err}`);
+        const err = await res.json();
+        console.log(`  ❌ ${dest.name} — ${err.message || JSON.stringify(err)}`);
       }
     } catch (err) {
       console.log(`  ❌ ${dest.name} — ${err.message}`);
