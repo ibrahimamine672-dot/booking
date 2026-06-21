@@ -42,7 +42,7 @@ function App() {
             <ScrollToTop />
             <div className="min-h-screen bg-surface-50 dark:bg-gray-950 flex flex-col transition-colors duration-200">
               <Navbar />
-              <main className="flex-1">
+              <main className="flex-1 pt-16 md:pt-[72px]">
                 <PageTransition>
                   <Routes>
                     <Route path="/" element={<Home />} />

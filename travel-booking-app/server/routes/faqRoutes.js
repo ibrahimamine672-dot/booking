@@ -13,14 +13,17 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Verify transporter configuration at startup (catches bad credentials early)
-transporter.verify((err) => {
-  if (err) {
-    console.error("❌ FAQ Nodemailer verification failed:", err.message);
-  } else {
-    console.log("✅ FAQ Nodemailer ready — can send contact emails from:", EMAIL_USER);
-  }
-});
+// Note: transporter.verify() is intentionally omitted for production.
+// Railway blocks outbound SMTP (port 465), causing ENETUNREACH on startup.
+// Email errors are caught and logged at send-time in each route instead.
+// To re-enable local verification, uncomment:
+// transporter.verify((err) => {
+//   if (err) {
+//     console.error("❌ FAQ Nodemailer verification failed:", err.message);
+//   } else {
+//     console.log("✅ FAQ Nodemailer ready — can send contact emails from:", EMAIL_USER);
+//   }
+// });
 
 // ================= POST /api/faq/ask =================
 router.post("/ask", async (req, res) => {

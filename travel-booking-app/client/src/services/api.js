@@ -56,8 +56,11 @@ export const deleteDestination = (id) => request(`/api/destinations/${id}`, { me
 export const getBookings = () => request('/api/bookings');
 export const createBooking = (data) => request('/api/bookings', { method: 'POST', body: JSON.stringify(data) });
 
-// AI Chat
+// AI Chat — OpenAI (requires API credits)
 export const chatAI = (message) => request('/api/ai/chat', { method: 'POST', body: JSON.stringify({ message }) });
+
+// AI Chat — Groq (free tier, llama-3.3-70b)
+export const chatFree = (message) => request('/api/ai/chat/free', { method: 'POST', body: JSON.stringify({ message }) });
 
 // Notes
 export const getNotes = () => request('/api/notes');

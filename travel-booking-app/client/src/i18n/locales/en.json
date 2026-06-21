@@ -223,7 +223,9 @@
     "signInPrompt": "Please sign in to use the AI travel assistant.",
     "sessionExpired": "Your session has expired. Please sign in again.",
     "error": "Sorry, I encountered an error. Please try again.",
-    "notSure": "I am not sure how to answer that."
+    "notSure": "I am not sure how to answer that.",
+    "free": "Free",
+    "gpt": "GPT"
   },
   "marketplace": {
     "title": "Marché Local",

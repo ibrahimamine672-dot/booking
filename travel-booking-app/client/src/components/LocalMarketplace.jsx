@@ -122,41 +122,41 @@ export default function LocalMarketplace() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
-          <Store className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <Store className="w-7 h-7 text-white" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Marché Local</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Produits et artisans de la région</p>
+          <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">Marché Local</h2>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Produits et artisans de la région</p>
         </div>
         {cartCount > 0 && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-sm">
-            <ShoppingCart className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{cartCount}</span>
+          <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/50 rounded-2xl shadow-sm">
+            <ShoppingCart className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-sm font-extrabold text-emerald-700 dark:text-emerald-300">{cartCount}</span>
           </div>
         )}
       </div>
 
       {/* Category Tabs */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-3 mb-8">
         {CATEGORIES.map(({ id, label, icon: Icon, description }) => (
           <button
             key={id}
             onClick={() => setActiveCategory(id)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-sm text-xs font-medium transition-all duration-200 ${
+            className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${
               activeCategory === id
-                ? 'bg-emerald-600 text-white'
-                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/50 hover:border-emerald-300 dark:hover:border-emerald-600 hover:shadow-md'
             }`}
           >
-            <div className={`w-6 h-6 rounded-sm flex items-center justify-center ${
-              activeCategory === id ? 'bg-white/15' : 'bg-gray-100 dark:bg-gray-600'
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+              activeCategory === id ? 'bg-white/15' : 'bg-slate-100 dark:bg-slate-700'
             }`}>
-              <Icon className={`w-3.5 h-3.5 ${activeCategory === id ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`} />
+              <Icon className={`w-4 h-4 ${activeCategory === id ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
             </div>
             <div className="text-left">
-              <p className="font-medium leading-tight">{label}</p>
+              <p className="font-bold leading-tight">{label}</p>
             </div>
           </button>
         ))}
@@ -165,48 +165,61 @@ export default function LocalMarketplace() {
       {/* Products Grid */}
       {currentCategory && (
         <>
-          <div className="flex items-center gap-1.5 mb-3">
-            <Package className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-            <span className="text-xs text-gray-500 dark:text-gray-400">{currentCategory.products.length} produit{currentCategory.products.length !== 1 ? 's' : ''}</span>
+          <div className="flex items-center gap-2 mb-4">
+            <Package className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              {currentCategory.products.length} produit{currentCategory.products.length !== 1 ? 's' : ''}
+            </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
             {currentCategory.products.map((product) => {
               const inCart = cart.find((p) => p.name === product.name);
               return (
-                <div key={product.name} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-emerald-200 dark:hover:border-emerald-600 hover:shadow-sm transition-all duration-200">
-                  <div className="relative h-32 overflow-hidden bg-gray-50 dark:bg-gray-900">
+                <div
+                  key={product.name}
+                  className="group bg-white dark:bg-slate-800 rounded-3xl overflow-hidden border border-slate-100 dark:border-slate-700/50 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] hover:scale-[1.02] transition-all duration-500"
+                >
+                  <div className="relative aspect-square overflow-hidden bg-slate-50 dark:bg-slate-900">
                     <img
                       src={product.image}
                       alt={product.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                       onError={(e) => { e.target.src = DEFAULT_PRODUCT_IMAGE; }}
                       loading="lazy"
                     />
-                    <div className="absolute top-1.5 right-1.5 bg-white/90 dark:bg-gray-800/90 rounded-sm px-1.5 py-0.5 text-[0.625rem] font-bold text-gray-700 dark:text-gray-200 shadow-sm">
+                    <div className="absolute top-2.5 right-2.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-xl px-2.5 py-1 text-xs font-extrabold text-slate-800 dark:text-slate-200 shadow-sm">
                       {product.price} DH
                     </div>
                   </div>
-                  <div className="p-3">
-                    <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-200 mb-0.5 line-clamp-1">{product.name}</h3>
-                    {product.description && (
-                      <p className="text-[0.625rem] text-gray-500 dark:text-gray-400 line-clamp-1 mb-2">{product.description}</p>
-                    )}
+                  <div className="p-4 space-y-2.5">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1">{product.name}</h3>
+                      {product.description && (
+                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">{product.description}</p>
+                      )}
+                    </div>
                     {inCart ? (
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => updateQuantity(product.name, -1)}
-                          className="w-6 h-6 flex items-center justify-center border border-gray-200 dark:border-gray-600 rounded-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                          <Minus className="w-2.5 h-2.5" />
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => updateQuantity(product.name, -1)}
+                          className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all duration-200"
+                        >
+                          <Minus className="w-3 h-3" />
                         </button>
-                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200 w-5 text-center">{inCart.quantity}</span>
-                        <button onClick={() => updateQuantity(product.name, 1)}
-                          className="w-6 h-6 flex items-center justify-center bg-emerald-600 text-white rounded-sm hover:bg-emerald-700 transition-colors">
-                          <Plus className="w-2.5 h-2.5" />
+                        <span className="text-sm font-extrabold text-slate-900 dark:text-white w-6 text-center">{inCart.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(product.name, 1)}
+                          className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm hover:shadow-md transition-all duration-200"
+                        >
+                          <Plus className="w-3 h-3" />
                         </button>
                       </div>
                     ) : (
-                      <button onClick={() => addToCart(product)}
-                        className="text-[0.625rem] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 px-2 py-1 rounded-sm transition-colors w-full">
+                      <button
+                        onClick={() => addToCart(product)}
+                        className="w-full py-2.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-xl transition-all duration-200 active:scale-[0.97]"
+                      >
                         + Ajouter
                       </button>
                     )}
@@ -220,67 +233,77 @@ export default function LocalMarketplace() {
 
       {/* Cart & Checkout */}
       {cart.length > 0 && (
-        <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700 p-5 transition-colors duration-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
-                <ShoppingCart className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+        <div className="mt-10 bg-white dark:bg-slate-800 rounded-3xl border border-emerald-200 dark:border-emerald-700/50 p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all duration-300">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+                <ShoppingCart className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Panier</h3>
-                <p className="text-[0.625rem] text-gray-500 dark:text-gray-400">{cartCount} article{cartCount !== 1 ? 's' : ''}</p>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Panier</h3>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{cartCount} article{cartCount !== 1 ? 's' : ''}</p>
               </div>
             </div>
-            <button onClick={() => setCart([])} className="text-xs text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">
-              <Trash2 className="w-3.5 h-3.5" />
+            <button
+              onClick={() => setCart([])}
+              className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
+            >
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="space-y-2 mb-4">
+          <div className="space-y-3 mb-5">
             {cart.map((item) => (
-              <div key={item.name} className="flex items-center justify-between py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <div className="w-8 h-8 rounded overflow-hidden bg-gray-50 dark:bg-gray-700 flex-shrink-0">
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover"
-                      onError={(e) => { e.target.src = DEFAULT_PRODUCT_IMAGE; }} />
+              <div key={item.name} className="flex items-center justify-between py-2.5 border-b border-slate-100 dark:border-slate-700/30 last:border-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-50 dark:bg-slate-700 flex-shrink-0 shadow-sm">
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.target.src = DEFAULT_PRODUCT_IMAGE; }}
+                    />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{item.name}</p>
-                    <p className="text-[0.625rem] text-gray-400 dark:text-gray-500">{item.price} DH × {item.quantity}</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{item.name}</p>
+                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500">{item.price} DH × {item.quantity}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                  <span className="text-xs font-bold text-gray-800 dark:text-gray-200">{item.price * item.quantity} DH</span>
-                  <button onClick={() => removeFromCart(item.name)} className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors">
-                    <XCircle className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-2.5 flex-shrink-0 ml-3">
+                  <span className="text-sm font-extrabold text-slate-900 dark:text-white">{item.price * item.quantity} DH</span>
+                  <button
+                    onClick={() => removeFromCart(item.name)}
+                    className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 transition-colors duration-200"
+                  >
+                    <XCircle className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-bold text-gray-800 dark:text-gray-100">Total</span>
-              <span className="text-lg font-bold text-emerald-700 dark:text-emerald-400">{cartTotal} DH</span>
+          <div className="border-t border-slate-100 dark:border-slate-700/30 pt-4">
+            <div className="flex items-center justify-between mb-5">
+              <span className="text-base font-extrabold text-slate-900 dark:text-white">Total</span>
+              <span className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{cartTotal} DH</span>
             </div>
 
             {paymentStatus === 'success' && (
-              <div className="mb-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-sm flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+              <div className="mb-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-2xl flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold text-green-800 dark:text-green-300">Paiement réussi !</p>
-                  <p className="text-[0.625rem] text-green-600 dark:text-green-400">Votre commande a été confirmée.</p>
+                  <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">Paiement réussi !</p>
+                  <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Votre commande a été confirmée.</p>
                 </div>
               </div>
             )}
 
             {paymentStatus === 'error' && (
-              <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-sm flex items-center gap-2">
-                <XCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+              <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-2xl flex items-center gap-3">
+                <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold text-red-800 dark:text-red-300">Paiement échoué</p>
-                  <p className="text-[0.625rem] text-red-600 dark:text-red-400">{paymentError}</p>
+                  <p className="text-sm font-bold text-red-800 dark:text-red-300">Paiement échoué</p>
+                  <p className="text-xs font-medium text-red-600 dark:text-red-400">{paymentError}</p>
                 </div>
               </div>
             )}
@@ -288,19 +311,19 @@ export default function LocalMarketplace() {
             <button
               onClick={handleCheckout}
               disabled={paymentStatus === 'loading'}
-              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 dark:disabled:bg-emerald-800 text-white font-semibold rounded-sm transition-all text-xs flex items-center justify-center gap-1.5 active:scale-[0.98]"
+              className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 disabled:from-emerald-300 disabled:to-emerald-300 dark:disabled:from-emerald-800 dark:disabled:to-emerald-800 text-white font-extrabold rounded-2xl transition-all duration-200 text-sm flex items-center justify-center gap-2.5 active:scale-[0.98] shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 disabled:shadow-none"
             >
               {paymentStatus === 'loading' ? (
-                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Traitement...</>
+                <><Loader2 className="w-4 h-4 animate-spin" /> Traitement...</>
               ) : !user ? (
-                <><CreditCard className="w-3.5 h-3.5" /> Connectez-vous pour payer</>
+                <><CreditCard className="w-4 h-4" /> Connectez-vous pour payer</>
               ) : (
-                <><CreditCard className="w-3.5 h-3.5" /> Payer {cartTotal} DH</>
+                <><CreditCard className="w-4 h-4" /> Payer {cartTotal} DH</>
               )}
             </button>
 
             {!user && (
-              <p className="text-[0.625rem] text-gray-400 dark:text-gray-500 text-center mt-1.5">Connectez-vous pour effectuer un paiement.</p>
+              <p className="text-xs font-medium text-slate-400 dark:text-slate-500 text-center mt-2">Connectez-vous pour effectuer un paiement.</p>
             )}
           </div>
         </div>

@@ -7,70 +7,76 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 transition-colors duration-200">
-      <div className="page-container py-10 sm:py-14">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8">
+    <footer className="bg-slate-950 dark:bg-black border-t border-slate-800/50 text-slate-400">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-10 lg:gap-12">
           {/* Brand */}
           <div className="col-span-2 sm:col-span-3 lg:col-span-1">
-            <Link to="/" className="flex items-center gap-2 mb-3">
-              <Building2 className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-              <span className="text-lg font-bold text-gray-800 dark:text-gray-100">TravelBook</span>
+            <Link to="/" className="flex items-center gap-2.5 mb-4 group">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg shadow-primary-500/20 group-hover:scale-105 transition-all duration-300">
+                <Building2 className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-lg font-extrabold tracking-tight text-white">TravelBook</span>
             </Link>
-            <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-4 max-w-xs">
+            <p className="text-sm font-medium text-slate-400 leading-relaxed mb-6 max-w-xs">
               {t('footer.description')}
             </p>
-            <div className="flex items-center gap-2">
-              <a href="#" className="w-8 h-8 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-sm flex items-center justify-center transition-colors" aria-label="Website">
-                <Globe className="w-3.5 h-3.5 text-gray-600 dark:text-gray-300" />
+            <div className="flex items-center gap-2.5">
+              <a href="#" className="w-10 h-10 rounded-2xl bg-slate-800/50 hover:bg-primary-500/20 border border-slate-700/50 hover:border-primary-500/30 flex items-center justify-center transition-all duration-300 group" aria-label="Website">
+                <Globe className="w-4 h-4 text-slate-400 group-hover:text-primary-400 transition-colors duration-300" />
               </a>
-              <a href="#" className="w-8 h-8 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-sm flex items-center justify-center transition-colors" aria-label="Email">
-                <Mail className="w-3.5 h-3.5 text-gray-600 dark:text-gray-300" />
+              <a href="#" className="w-10 h-10 rounded-2xl bg-slate-800/50 hover:bg-primary-500/20 border border-slate-700/50 hover:border-primary-500/30 flex items-center justify-center transition-all duration-300 group" aria-label="Email">
+                <Mail className="w-4 h-4 text-slate-400 group-hover:text-primary-400 transition-colors duration-300" />
               </a>
             </div>
           </div>
 
           {/* Support */}
           <div>
-            <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider mb-4">{t('footer.support')}</h4>
-            <ul className="space-y-2">
-              <li><Link to="/faq" className="text-xs text-gray-500 dark:text-gray-400 hover:text-primary-700 dark:hover:text-primary-400 transition-colors">{t('footer.contactUs')}</Link></li>
-              <li><Link to="/faq" className="text-xs text-gray-500 dark:text-gray-400 hover:text-primary-700 dark:hover:text-primary-400 transition-colors">{t('nav.faq')}</Link></li>
-              <li><Link to="/" className="text-xs text-gray-500 dark:text-gray-400 hover:text-primary-700 dark:hover:text-primary-400 transition-colors">{t('footer.cancellation')}</Link></li>
-              <li><Link to="/" className="text-xs text-gray-500 dark:text-gray-400 hover:text-primary-700 dark:hover:text-primary-400 transition-colors">{t('footer.terms')}</Link></li>
+            <h4 className="text-xs font-bold text-white uppercase tracking-[0.08em] mb-5">{t('footer.support')}</h4>
+            <ul className="space-y-3">
+              <li><Link to="/faq" className="text-sm font-medium text-slate-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">{t('footer.contactUs')}</Link></li>
+              <li><Link to="/faq" className="text-sm font-medium text-slate-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">{t('nav.faq')}</Link></li>
+              <li><Link to="/" className="text-sm font-medium text-slate-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">{t('footer.cancellation')}</Link></li>
+              <li><Link to="/" className="text-sm font-medium text-slate-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">{t('footer.terms')}</Link></li>
             </ul>
           </div>
 
           {/* Explore */}
           <div>
-            <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider mb-4">{t('footer.explore')}</h4>
-            <ul className="space-y-2">
-              <li><Link to="/" className="text-xs text-gray-500 dark:text-gray-400 hover:text-primary-700 dark:hover:text-primary-400 transition-colors">{t('footer.home')}</Link></li>
-              <li><Link to="/destinations" className="text-xs text-gray-500 dark:text-gray-400 hover:text-primary-700 dark:hover:text-primary-400 transition-colors">{t('nav.allDestinations')}</Link></li>
-              <li><Link to="/destinations?country=maroc" className="text-xs text-gray-500 dark:text-gray-400 hover:text-primary-700 dark:hover:text-primary-400 transition-colors">🇲🇦 {t('nav.morocco')}</Link></li>
+            <h4 className="text-xs font-bold text-white uppercase tracking-[0.08em] mb-5">{t('footer.explore')}</h4>
+            <ul className="space-y-3">
+              <li><Link to="/" className="text-sm font-medium text-slate-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">{t('footer.home')}</Link></li>
+              <li><Link to="/destinations" className="text-sm font-medium text-slate-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">{t('nav.allDestinations')}</Link></li>
+              <li><Link to="/destinations?country=maroc" className="text-sm font-medium text-slate-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">🇲🇦 {t('nav.morocco')}</Link></li>
             </ul>
           </div>
 
           {/* Account */}
           <div>
-            <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider mb-4">{t('footer.account')}</h4>
-            <ul className="space-y-2">
-              <li><Link to="/login" className="text-xs text-gray-500 dark:text-gray-400 hover:text-primary-700 dark:hover:text-primary-400 transition-colors">{t('footer.signIn')}</Link></li>
-              <li><Link to="/register" className="text-xs text-gray-500 dark:text-gray-400 hover:text-primary-700 dark:hover:text-primary-400 transition-colors">{t('footer.createAccount')}</Link></li>
-              <li><Link to="/dashboard" className="text-xs text-gray-500 dark:text-gray-400 hover:text-primary-700 dark:hover:text-primary-400 transition-colors">{t('footer.myBookings')}</Link></li>
+            <h4 className="text-xs font-bold text-white uppercase tracking-[0.08em] mb-5">{t('footer.account')}</h4>
+            <ul className="space-y-3">
+              <li><Link to="/login" className="text-sm font-medium text-slate-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">{t('footer.signIn')}</Link></li>
+              <li><Link to="/register" className="text-sm font-medium text-slate-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">{t('footer.createAccount')}</Link></li>
+              <li><Link to="/dashboard" className="text-sm font-medium text-slate-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">{t('footer.myBookings')}</Link></li>
             </ul>
           </div>
 
           {/* Contact */}
           <div>
-            <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider mb-4">{t('footer.contact')}</h4>
-            <ul className="space-y-2">
-              <li className="flex items-start gap-2">
-                <MapPin className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
-                <span className="text-xs text-gray-500 dark:text-gray-400">Casablanca, Morocco</span>
+            <h4 className="text-xs font-bold text-white uppercase tracking-[0.08em] mb-5">{t('footer.contact')}</h4>
+            <ul className="space-y-4">
+              <li className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-slate-800/50 flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-3.5 h-3.5 text-primary-400" />
+                </div>
+                <span className="text-sm font-medium text-slate-400 pt-1">Casablanca, Morocco</span>
               </li>
-              <li className="flex items-start gap-2">
-                <Mail className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
-                <a href="mailto:hello@travelbook.app" className="text-xs text-gray-500 dark:text-gray-400 hover:text-primary-700 dark:hover:text-primary-400 transition-colors">hello@travelbook.app</a>
+              <li className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-slate-800/50 flex items-center justify-center flex-shrink-0">
+                  <Mail className="w-3.5 h-3.5 text-primary-400" />
+                </div>
+                <a href="mailto:hello@travelbook.app" className="text-sm font-medium text-primary-400 hover:text-primary-300 pt-1 transition-colors duration-200">hello@travelbook.app</a>
               </li>
             </ul>
           </div>
@@ -78,11 +84,11 @@ export default function Footer() {
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-gray-200 dark:border-gray-800">
-        <div className="page-container py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-[0.625rem] text-gray-400 dark:text-gray-500">&copy; {currentYear} TravelBook. {t('footer.allRightsReserved')}</p>
-          <p className="text-[0.625rem] text-gray-400 dark:text-gray-500 flex items-center gap-1">
-            {t('footer.madeWith')} <Heart className="w-2.5 h-2.5 text-red-400 fill-red-400" /> by TravelBook
+      <div className="border-t border-slate-800/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-sm font-medium text-slate-500">&copy; {currentYear} TravelBook. {t('footer.allRightsReserved')}</p>
+          <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5">
+            {t('footer.madeWith')} <Heart className="w-4 h-4 text-red-500 fill-red-500 animate-pulse" /> by TravelBook
           </p>
         </div>
       </div>

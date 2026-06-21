@@ -223,7 +223,9 @@
     "signInPrompt": "Veuillez vous connecter pour utiliser l'assistant de voyage IA.",
     "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter.",
     "error": "Désolé, une erreur s'est produite. Veuillez réessayer.",
-    "notSure": "Je ne suis pas sûr de savoir répondre à cela."
+    "notSure": "Je ne suis pas sûr de savoir répondre à cela.",
+    "free": "Gratuit",
+    "gpt": "GPT"
   },
   "marketplace": {
     "title": "Marché Local",
