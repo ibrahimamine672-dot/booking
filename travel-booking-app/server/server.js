@@ -2,10 +2,9 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const path = require("path");
 const passport = require("passport");
 
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+dotenv.config();
 
 require("./config/passport");
 const { apiLimiter, authLimiter, aiLimiter, paymentLimiter, faqLimiter } = require("./middleware/rateLimiter");
