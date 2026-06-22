@@ -30,11 +30,12 @@ export default function Destinations() {
   const activeFilter = countryParam === 'maroc' ? 'maroc' : 'all';
 
   useEffect(() => {
-    getDestinations()
+    const params = countryParam && countryParam !== 'all' ? { country: countryParam } : {};
+    getDestinations(params)
       .then(setDestinations)
       .catch(() => setError('Failed to load destinations'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [countryParam]);
 
   const handleFilterChange = (key) => {
     if (key === 'maroc') {

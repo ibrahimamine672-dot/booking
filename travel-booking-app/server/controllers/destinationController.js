@@ -21,7 +21,14 @@ exports.createDestination = async (req, res) => {
 // 📥 GET ALL
 exports.getDestinations = async (req, res) => {
   try {
-    const destinations = await Destination.find().sort({ createdAt: -1 });
+    const filter = {};
+    if (req.query.country) {
+      // Escape regex special chars to prevent ReDoS
+      const escaped = req.query.country.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Case-insensitive match so "maroc" also finds "Maroc" / "Morocco"
+      filter.country = { $regex: escaped, $options: 'i' };
+    }
+    const destinations = await Destination.find(filter).sort({ createdAt: -1 });
     res.json(destinations);
   } catch (err) {
     console.error("❌ Get destinations error:", err.message);

@@ -47,7 +47,11 @@ export const forgotPassword = (email) => request('/api/auth/forgot-password', { 
 export const resetPassword = (token, password) => request('/api/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) });
 
 // Destinations
-export const getDestinations = () => request('/api/destinations');
+export const getDestinations = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  const endpoint = query ? `/api/destinations?${query}` : '/api/destinations';
+  return request(endpoint);
+};
 export const getDestination = (id) => request(`/api/destinations/${id}`);
 export const createDestination = (data) => request('/api/destinations', { method: 'POST', body: JSON.stringify(data) });
 export const deleteDestination = (id) => request(`/api/destinations/${id}`, { method: 'DELETE' });
