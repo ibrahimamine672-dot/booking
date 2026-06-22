@@ -1,9 +1,26 @@
-// Seed script — run with: node scripts/seed-destinations.js
-// Requires the backend server to be running on port 3000
-// This script will:
-//   1. Register a test user (if not already registered)
-//   2. Login to get an auth token
-//   3. Seed all destinations using the token
+// ============================================================
+// Seed Script — TravelBook Destinations
+// ============================================================
+//
+// Two modes:
+//
+//   1. Direct MongoDB mode (recommended for production):
+//      MONGO_URI="<your_mongo_connection_string>" node scripts/seed-destinations.js
+//
+//   2. API mode (requires local server on port 3000):
+//      node scripts/seed-destinations.js
+//
+// ============================================================
+
+// Conditionally load .env if DOTENV_CONFIG_PATH or a local .env file exists
+const fs = require("fs");
+const path = require("path");
+
+// Try loading .env automatically
+const envPath = path.resolve(__dirname, "..", ".env");
+if (fs.existsSync(envPath)) {
+  require("dotenv").config({ path: envPath, override: true });
+}
 
 const API_BASE = 'http://localhost:3000/api';
 
@@ -106,6 +123,65 @@ const destinations = [
   },
 ];
 
+// ======================================================================
+// MODE 1 — Direct MongoDB connection (when MONGO_URI is set)
+// ======================================================================
+async function seedDirectly() {
+  const mongoose = require("mongoose");
+
+  // Build the Destination schema inline (same shape as the server model)
+  const destinationSchema = new mongoose.Schema(
+    {
+      name: { type: String, required: true },
+      country: String,
+      city: String,
+      description: String,
+      image: String,
+      price: Number,
+      rating: { type: Number, default: 0 },
+    },
+    { timestamps: true }
+  );
+
+  const Destination = mongoose.model("Destination", destinationSchema);
+
+  const uri = process.env.MONGO_URI;
+  console.log(`⏳ Connecting directly to MongoDB...\n`);
+
+  await mongoose.connect(uri, {
+    serverSelectionTimeoutMS: 15000,
+    connectTimeoutMS: 10000,
+  });
+
+  console.log(`✅ Connected to MongoDB\n`);
+  console.log(`🌍 Seeding ${destinations.length} destinations...\n`);
+
+  for (const dest of destinations) {
+    try {
+      // Use findOneAndUpdate with upsert to avoid duplicates (keyed by name)
+      const created = await Destination.findOneAndUpdate(
+        { name: dest.name },
+        { $set: dest },
+        { upsert: true, new: true }
+      );
+      const action = created.createdAt === created.updatedAt ? "✅ Created" : "🔄 Updated";
+      console.log(`  ${action} ${created.name} (${created.country})`);
+    } catch (err) {
+      console.log(`  ❌ ${dest.name} — ${err.message}`);
+    }
+  }
+
+  const count = await Destination.countDocuments();
+  console.log(`\n📊 Total destinations in database: ${count}`);
+
+  await mongoose.disconnect();
+  console.log(`\n✨ Done! The production database is now populated.`);
+}
+
+// ======================================================================
+// MODE 2 — REST API mode (requires local server, default)
+// ======================================================================
+
 async function api(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json', ...options.headers },
@@ -136,7 +212,7 @@ async function getToken() {
   return data.token;
 }
 
-async function seed() {
+async function seedViaAPI() {
   console.log('⏳ Authenticating...\n');
 
   let token;
@@ -177,4 +253,20 @@ async function seed() {
   console.log('\n✨ Done! Refresh the Destinations page.');
 }
 
-seed();
+// ======================================================================
+// ENTRY POINT
+// ======================================================================
+async function main() {
+  const uri = process.env.MONGO_URI;
+
+  if (uri) {
+    await seedDirectly();
+  } else {
+    await seedViaAPI();
+  }
+}
+
+main().catch((err) => {
+  console.error("\n❌ Fatal error:", err.message);
+  process.exit(1);
+});
