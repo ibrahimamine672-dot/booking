@@ -76,7 +76,9 @@ router.post("/ask", async (req, res) => {
       `,
     };
 
-    await transporter.sendMail(mailOptions);
+    transporter.sendMail(mailOptions).catch((err) => {
+      console.error("❌ FAQ email send failed:", err.message);
+    });
 
     res.json({ message: "Thank you! Your question has been submitted. We'll get back to you soon." });
   } catch (err) {
