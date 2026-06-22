@@ -129,34 +129,30 @@ function freePort(port) {
   }
 }
 
-// ================= START SERVER (local dev only) =================
-if (process.env.NODE_ENV !== "production") {
-  const PORT = process.env.PORT || 5000;
-  freePort(PORT);
+// ================= START SERVER =================
+const PORT = process.env.PORT || 3000;
+freePort(PORT);
 
-  connectToDatabase()
-    .then(() => {
-      const server = app.listen(PORT, () => {
-        console.log("🚀 Server running on port " + PORT);
-      });
-      // Handle server-level errors (e.g., EADDRINUSE from rapid restarts)
-      server.on("error", (err) => {
-        console.error("❌ Server error:", err.message);
-        if (err.code === "EADDRINUSE") {
-          console.error("   Port " + PORT + " is already in use. Try stopping other servers first.");
-        }
-        process.exit(1);
-      });
-    })
-    .catch((err) => {
-      console.error("❌ Server failed to start:", err.message);
+connectToDatabase()
+  .then(() => {
+    const server = app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+    // Handle server-level errors (e.g., EADDRINUSE from rapid restarts)
+    server.on("error", (err) => {
+      console.error("❌ Server error:", err.message);
+      if (err.code === "EADDRINUSE") {
+        console.error("   Port " + PORT + " is already in use. Try stopping other servers first.");
+      }
       process.exit(1);
     });
-} else {
-  console.log("📦 Serverless mode — skipping HTTP listen");
-}
+  })
+  .catch((err) => {
+    console.error("❌ Server failed to start:", err.message);
+    process.exit(1);
+  });
 
-// ================= EXPORT FOR SERVERLESS =================
+// ================= EXPORT (for testing / compatibility) =================
 module.exports = app;
 
 // ================= UNHANDLED REJECTION HANDLER =================
