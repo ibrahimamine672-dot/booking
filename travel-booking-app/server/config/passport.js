@@ -10,7 +10,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
   const googleCallbackURL = process.env.GOOGLE_CALLBACK_URL
     || (railwayDomain ? `https://${railwayDomain}/api/auth/google/callback` : null)
-    || "http://localhost:3000/api/auth/google/callback";
+  ;
   console.log(`🔐 Google OAuth callbackURL: ${googleCallbackURL}`);
   if (!process.env.GOOGLE_CALLBACK_URL && !railwayDomain) {
     console.warn(`⚠️ Neither GOOGLE_CALLBACK_URL nor RAILWAY_PUBLIC_DOMAIN is set. Google auth will fail in production.`);
