@@ -1,6 +1,6 @@
 # Environment variables (contains secrets!)
 # Root-only .env — the client has its own tracked .env for VITE_API_URL
-# /.env
+/.env
 travel-booking-app/server/node_modules/
 .env.local
 .env.production
