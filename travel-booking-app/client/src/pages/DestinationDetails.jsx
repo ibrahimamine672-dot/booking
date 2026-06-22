@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getDestination, createBooking, checkout } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import StripeProvider from '../components/StripeProvider';
+import StripeCheckout from '../components/StripeCheckout';
 import {
   MapPin, Star, ArrowLeft, Calendar, Users, Plane, CheckCircle,
   CreditCard, Loader2, XCircle, ChevronLeft, Shield, Building2,
@@ -47,6 +49,7 @@ export default function DestinationDetails() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentError, setPaymentError] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
@@ -81,12 +84,14 @@ export default function DestinationDetails() {
     setPaymentStatus('loading');
     setPaymentError('');
     try {
-      await checkout(
+      const res = await checkout(
         [{ name: destination.name, price: destination.price }],
         destination.price * booking.persons,
-        'USD'
+        'USD',
+        destination._id
       );
-      setPaymentStatus('success');
+      setClientSecret(res.clientSecret);
+      setPaymentStatus('stripe');
     } catch (err) {
       setPaymentStatus('error');
       setPaymentError(err.message || 'Payment failed');
@@ -371,23 +376,27 @@ export default function DestinationDetails() {
                     </div>
                   )}
 
-                  {destination.price && paymentStatus !== 'success' && (
+                  {paymentStatus === 'stripe' && clientSecret ? (
+                    <StripeProvider clientSecret={clientSecret}>
+                      <StripeCheckout
+                        onSuccess={() => setPaymentStatus('success')}
+                        onError={(msg) => { setPaymentStatus('error'); setPaymentError(msg); }}
+                      />
+                    </StripeProvider>
+                  ) : paymentStatus === 'success' ? (
+                    <Link to="/dashboard" className="btn-primary w-full text-sm block text-center">{t('destinationDetails.viewMyBookings')}</Link>
+                  ) : destination.price && paymentStatus !== 'loading' ? (
                     <button
                       onClick={handlePayment}
-                      disabled={paymentStatus === 'loading'}
                       className="btn-primary w-full mb-2 bg-green-600 hover:bg-green-700 text-sm"
                     >
-                      {paymentStatus === 'loading' ? (
-                        <><Loader2 className="w-4 h-4 animate-spin" /> {t('destinationDetails.processing')}</>
-                      ) : (
-                        <><CreditCard className="w-4 h-4" /> {t('destinationDetails.payNow')} ${destination.price * booking.persons}</>
-                      )}
+                      <CreditCard className="w-4 h-4 inline" /> {t('destinationDetails.payNow')} ${destination.price * booking.persons}
                     </button>
-                  )}
-
-                  {paymentStatus === 'success' && (
-                    <Link to="/dashboard" className="btn-primary w-full text-sm">{t('destinationDetails.viewMyBookings')}</Link>
-                  )}
+                  ) : paymentStatus === 'loading' ? (
+                    <button disabled className="btn-primary w-full mb-2 bg-green-600 text-sm">
+                      <Loader2 className="w-4 h-4 animate-spin inline" /> {t('destinationDetails.processing')}
+                    </button>
+                  ) : null}
                 </div>
               ) : (
                 <form onSubmit={handleBooking} className="space-y-4">

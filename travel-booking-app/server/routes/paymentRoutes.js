@@ -2,7 +2,7 @@ const router = require("express").Router();
 const paymentController = require("../controllers/paymentController");
 const protect = require("../middleware/authMiddleware");
 
-// POST /api/payment/checkout — Process a payment
 router.post("/checkout", protect, paymentController.checkout);
+router.post("/confirm", protect, paymentController.confirmPayment);
 
 module.exports = router;

@@ -73,9 +73,16 @@ export const createNote = (content) => request('/api/notes', { method: 'POST', b
 // FAQ / Contact
 export const sendFAQContact = (data) => request('/api/faq/ask', { method: 'POST', body: JSON.stringify(data) });
 
-// Payment Checkout
-export const checkout = (items, totalAmount, currency = 'USD') =>
+// Payment Checkout (returns Stripe clientSecret)
+export const checkout = (items, totalAmount, currency = 'USD', destinationId = '', bookingId = '') =>
   request('/api/payment/checkout', {
     method: 'POST',
-    body: JSON.stringify({ items, totalAmount, currency }),
+    body: JSON.stringify({ items, totalAmount, currency, destinationId, bookingId }),
+  });
+
+// Confirm a payment after Stripe processes it
+export const confirmPayment = (paymentIntentId) =>
+  request('/api/payment/confirm', {
+    method: 'POST',
+    body: JSON.stringify({ paymentIntentId }),
   });

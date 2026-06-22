@@ -1,11 +1,9 @@
-// Mock payment controller — simulates Stripe/checkout processing
-// In production, replace with real Stripe integration
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 exports.checkout = async (req, res) => {
   try {
     const { items, totalAmount, currency, destinationId, bookingId } = req.body;
 
-    // Validate request
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "No items provided for checkout" });
     }
@@ -14,25 +12,51 @@ exports.checkout = async (req, res) => {
       return res.status(400).json({ message: "Invalid total amount" });
     }
 
-    // Simulate payment processing delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    const amountInCents = Math.round(totalAmount * 100);
+    const paymentCurrency = (currency || "USD").toLowerCase();
 
-    // Generate a mock transaction ID
-    const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amountInCents,
+      currency: paymentCurrency,
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        userId: req.user.id,
+        destinationId: destinationId || "",
+        bookingId: bookingId || "",
+      },
+    });
 
-    // Mock successful payment response
     res.status(200).json({
       success: true,
-      message: "Payment processed successfully",
-      transactionId,
+      clientSecret: paymentIntent.clientSecret,
+      paymentIntentId: paymentIntent.id,
       amount: totalAmount,
-      currency: currency || "USD",
-      items: items.map((item) => item.name || item.product || "Item"),
-      processedAt: new Date().toISOString(),
-      user: req.user.id,
+      currency: paymentCurrency,
     });
   } catch (err) {
-    console.error("Payment error:", err);
+    console.error("Payment error:", err.message);
     res.status(500).json({ message: "Payment processing failed" });
+  }
+};
+
+exports.confirmPayment = async (req, res) => {
+  try {
+    const { paymentIntentId } = req.body;
+
+    if (!paymentIntentId) {
+      return res.status(400).json({ message: "Missing paymentIntentId" });
+    }
+
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    res.status(200).json({
+      success: paymentIntent.status === "succeeded",
+      status: paymentIntent.status,
+      amount: paymentIntent.amount / 100,
+      currency: paymentIntent.currency,
+    });
+  } catch (err) {
+    console.error("Confirm payment error:", err.message);
+    res.status(500).json({ message: "Failed to confirm payment" });
   }
 };
