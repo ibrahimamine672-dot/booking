@@ -3,7 +3,7 @@ const User = require("../models/User");
 
 // Only register Google strategy if credentials are configured
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-  const googleCallbackURL = process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/auth/google/callback";
+  const googleCallbackURL = process.env.GOOGLE_CALLBACK_URL || "https://booking-production-1f69.up.railway.app/api/auth/google/callback";
   if (!process.env.GOOGLE_CALLBACK_URL) {
     console.warn(`⚠️ GOOGLE_CALLBACK_URL is NOT set — using fallback: ${googleCallbackURL}`);
   } else {
