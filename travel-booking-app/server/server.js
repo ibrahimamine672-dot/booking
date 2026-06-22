@@ -47,7 +47,7 @@ async function connectToDatabase() {
 // ================= GLOBAL MIDDLEWARE =================
 const explicitOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
-  : ["https://booking-v3u2.vercel.app"];
+  : ["https://booking-v3u2.vercel.app", "https://booking-behm.vercel.app"];
 
 app.use(cors({
   origin: (origin, callback) => {

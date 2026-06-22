@@ -49,7 +49,7 @@ async function startServer() {
   // ================= GLOBAL MIDDLEWARE =================
   const explicitOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
-    : [];
+    : ["https://booking-behm.vercel.app"];
 
   app.use(cors({
     origin: (origin, callback) => {
