@@ -212,9 +212,13 @@ exports.googleCallback = async (req, res) => {
     // passport.authenticate puts the user on req.user
     if (!req.user) {
       return res.redirect(
-`${process.env.CLIENT_URL || "https://booking-behm.vercel.app"}/login?error=google_auth_failed`
+        `${process.env.CLIENT_URL || "https://booking-behm.vercel.app"}/login?error=google_auth_failed`
+      );
+    }
 
-// Generate JWT token
+    const user = req.user;
+
+    // Generate JWT token
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
