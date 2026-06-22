@@ -3,6 +3,13 @@ const User = require("../models/User");
 
 // Only register Google strategy if credentials are configured
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  const googleCallbackURL = process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/auth/google/callback";
+  if (!process.env.GOOGLE_CALLBACK_URL) {
+    console.warn(`⚠️ GOOGLE_CALLBACK_URL is NOT set — using fallback: ${googleCallbackURL}`);
+  } else {
+    console.log(`🔐 Google OAuth callbackURL: ${googleCallbackURL}`);
+  }
+
   const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
   passport.use(
@@ -10,7 +17,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/auth/google/callback",
+        callbackURL: googleCallbackURL,
         scope: ["profile", "email"],
       },
       async (accessToken, refreshToken, profile, done) => {
