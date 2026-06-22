@@ -6,18 +6,27 @@ const path = require("path");
 // override: true ensures fresh values from .env replace stale shell-inherited values
 require("dotenv").config({ override: true });
 
-// Use the server's passport instance so the Google strategy registers on the same passport
-const passport = require("./travel-booking-app/server/node_modules/passport");
+// ================= PASSPORT (shared instance with server's config/passport) =================
+// Try the server's local node_modules first (local dev), then fall back to hoisted root (Railway).
+let passport;
+try {
+  passport = require("./travel-booking-app/server/node_modules/passport");
+} catch {
+  passport = require("passport");
+}
 require("./travel-booking-app/server/config/passport");
 const { apiLimiter, authLimiter, aiLimiter, paymentLimiter, faqLimiter } = require("./travel-booking-app/server/middleware/rateLimiter");
 
 // ================= SHARED MONGOOSE INSTANCE =================
-// The server/ directory has its own mongoose in its node_modules.
-// Models use require("mongoose") which resolves to the server's mongoose.
-// We MUST use the SAME instance so that models register on the same
-// connection that serve.js opens. Using the root's mongoose would create
-// two separate instances with two separate connections.
-const mongoose = require("./travel-booking-app/server/node_modules/mongoose");
+// Try the server's local node_modules first (local dev), then fall back to hoisted root (Railway).
+// This ensures models compiled via require("mongoose") in server/ resolve to the same instance
+// that opens the connection in this file.
+let mongoose;
+try {
+  mongoose = require("./travel-booking-app/server/node_modules/mongoose");
+} catch {
+  mongoose = require("mongoose");
+}
 
 // ================= LOAD ROUTES & MODELS BEFORE CONNECTION =================
 // Models MUST be compiled before mongoose.connect() so that their
@@ -57,12 +66,14 @@ async function startServer() {
       if (!origin) {
         return callback(null, true);
       }
+      // Strip trailing slash for consistent matching
+      const normalized = origin.replace(/\/+$/, "");
       // Allow any localhost or 127.0.0.1 origin regardless of port (Vite uses dynamic ports)
-      if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(normalized)) {
         return callback(null, true);
       }
       // Allow explicitly configured origins via CORS_ORIGIN env var
-      if (explicitOrigins.includes(origin)) {
+      if (explicitOrigins.includes(normalized)) {
         return callback(null, true);
       }
       console.warn("⚠️ CORS blocked origin:", origin);
@@ -98,6 +109,8 @@ async function startServer() {
   });
 
   // Connect to MongoDB — reduced timeouts for faster local feedback
+  // IMPORTANT: Connection failure is NON-FATAL. The server starts anyway;
+  // DB-dependent routes will return 503 until the database becomes available.
   console.log(`⏳ Connecting to MongoDB at ${process.env.MONGO_URI}...`);
   try {
     await mongoose.connect(process.env.MONGO_URI, {
@@ -109,9 +122,10 @@ async function startServer() {
     console.log(`✅ MongoDB connected (${Date.now() - startTime}ms)`);
   } catch (err) {
     console.error("❌ MongoDB connection failed:", err.message);
-    console.error("   Make sure MongoDB is running locally (mongod)");
-    console.error("   or update MONGO_URI in your .env file");
-    throw err;
+    console.error("   ⚠️ Server will start WITHOUT database access.");
+    console.error("   ⚠️ DB-dependent routes (/api/destinations, /api/bookings, etc.) will return 503.");
+    console.error("   ⚠️ Make sure MONGO_URI is set correctly in Railway dashboard.");
+    dbReady = false;
   }
 
   // Ensure DB is connected before every request (handles connection drops)
