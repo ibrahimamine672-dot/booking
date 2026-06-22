@@ -45,9 +45,14 @@ async function connectToDatabase() {
 }
 
 // ================= GLOBAL MIDDLEWARE =================
-const explicitOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
-  : ["https://booking-v3u2.vercel.app", "https://booking-behm.vercel.app"];
+const explicitOrigins = [
+  ...(process.env.CORS_ORIGIN?.trim()
+    ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
+    : []),
+  // Hardcoded fallbacks — always included even if CORS_ORIGIN env var is set
+  "https://booking-v3u2.vercel.app",
+  "https://booking-behm.vercel.app",
+];
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -107,6 +112,11 @@ app.use("/api/faq", faqRoutes);
 // ================= HOME ROUTE =================
 app.get("/", (req, res) => {
   res.send("API is running 🚀");
+});
+
+// ================= 404 HANDLER =================
+app.use((req, res) => {
+  res.status(404).json({ message: `Route ${req.originalUrl} not found` });
 });
 
 // ================= GLOBAL ERROR HANDLER =================

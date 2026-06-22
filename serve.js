@@ -56,9 +56,14 @@ async function startServer() {
   console.log("🚀 TravelBook server starting...");
 
   // ================= GLOBAL MIDDLEWARE =================
-  const explicitOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
-    : ["https://booking-behm.vercel.app"];
+  const explicitOrigins = [
+    ...(process.env.CORS_ORIGIN?.trim()
+      ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
+      : []),
+    // Hardcoded fallbacks — always included even if CORS_ORIGIN env var is set
+    "https://booking-v3u2.vercel.app",
+    "https://booking-behm.vercel.app",
+  ];
 
   app.use(cors({
     origin: (origin, callback) => {
