@@ -3,11 +3,17 @@ const User = require("../models/User");
 
 // Only register Google strategy if credentials are configured
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-  const googleCallbackURL = process.env.GOOGLE_CALLBACK_URL || "https://booking-production-1f69.up.railway.app/api/auth/google/callback";
-  if (!process.env.GOOGLE_CALLBACK_URL) {
-    console.warn(`⚠️ GOOGLE_CALLBACK_URL is NOT set — using fallback: ${googleCallbackURL}`);
-  } else {
-    console.log(`🔐 Google OAuth callbackURL: ${googleCallbackURL}`);
+  // Determine the callback URL with this priority:
+  // 1. Explicit GOOGLE_CALLBACK_URL env var
+  // 2. RAILWAY_PUBLIC_DOMAIN auto-detection (no manual config needed in Railway)
+  // 3. Localhost fallback for development
+  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
+  const googleCallbackURL = process.env.GOOGLE_CALLBACK_URL
+    || (railwayDomain ? `https://${railwayDomain}/api/auth/google/callback` : null)
+    || "http://localhost:3000/api/auth/google/callback";
+  console.log(`🔐 Google OAuth callbackURL: ${googleCallbackURL}`);
+  if (!process.env.GOOGLE_CALLBACK_URL && !railwayDomain) {
+    console.warn(`⚠️ Neither GOOGLE_CALLBACK_URL nor RAILWAY_PUBLIC_DOMAIN is set. Google auth will fail in production.`);
   }
 
   const GoogleStrategy = require("passport-google-oauth20").Strategy;
