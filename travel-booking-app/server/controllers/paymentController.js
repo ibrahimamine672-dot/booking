@@ -1,4 +1,8 @@
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const getStripe = () => {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("STRIPE_SECRET_KEY is not set");
+  return require("stripe")(key);
+};
 
 exports.checkout = async (req, res) => {
   try {
@@ -12,6 +16,7 @@ exports.checkout = async (req, res) => {
       return res.status(400).json({ message: "Invalid total amount" });
     }
 
+    const stripe = getStripe();
     const amountInCents = Math.round(totalAmount * 100);
     const paymentCurrency = (currency || "USD").toLowerCase();
 
@@ -47,6 +52,7 @@ exports.confirmPayment = async (req, res) => {
       return res.status(400).json({ message: "Missing paymentIntentId" });
     }
 
+    const stripe = getStripe();
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     res.status(200).json({
