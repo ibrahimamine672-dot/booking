@@ -42,8 +42,9 @@ const mongooseOptions = {
 
 async function startServer() {
   const app = express();
+  const startTime = Date.now();
 
-  // ================= CLEANUP: Kill any stale server on the same port =================
+  console.log("🚀 TravelBook server starting...");
 
   // ================= GLOBAL MIDDLEWARE =================
   const explicitOrigins = process.env.CORS_ORIGIN
@@ -79,14 +80,14 @@ async function startServer() {
   app.use("/api/auth", authLimiter);
   app.use("/api/ai", aiLimiter);
   app.use("/api/payment", paymentLimiter);
-  app.use("/api/faq", faqLimiter);                         // FAQ: 5 req/15min
+  app.use("/api/faq", faqLimiter);
 
   // ================= CONNECTION STATE =================
   let dbReady = false;
 
-  // Connection event logging for diagnostics
+  // Connection event logging
   mongoose.connection.on("connected", () => {
-    console.log("🔌 MongoDB driver connected");
+    console.log(`🔌 MongoDB driver connected (${Date.now() - startTime}ms)`);
   });
   mongoose.connection.on("disconnected", () => {
     console.log("⚠️ MongoDB disconnected");
@@ -95,40 +96,31 @@ async function startServer() {
   mongoose.connection.on("error", (err) => {
     console.error("❌ MongoDB connection error:", err.message || err);
   });
-  mongoose.connection.on("reconnected", () => {
-    console.log("✅ MongoDB reconnected");
-    dbReady = true;
-  });
 
-  // Connect and wait for the native driver to be fully ready
+  // Connect to MongoDB — reduced timeouts for faster local feedback
+  console.log(`⏳ Connecting to MongoDB at ${process.env.MONGO_URI}...`);
   try {
-    await mongoose.connect(process.env.MONGO_URI, mongooseOptions);
-    // Wait for the underlying MongoDB driver to emit 'open' (fully initialized)
-    await new Promise((resolve) => {
-      if (mongoose.connection.db) {
-        return resolve();
-      }
-      mongoose.connection.once("open", resolve);
+    await mongoose.connect(process.env.MONGO_URI, {
+      ...mongooseOptions,
+      serverSelectionTimeoutMS: 8000,  // faster failure: 8s instead of 15s
+      connectTimeoutMS: 5000,          // faster failure: 5s instead of 10s
     });
     dbReady = true;
-    console.log("✅ MongoDB connected — driver fully initialized");
+    console.log(`✅ MongoDB connected (${Date.now() - startTime}ms)`);
   } catch (err) {
-    console.error("❌ Failed initial MongoDB connection:", err.message);
+    console.error("❌ MongoDB connection failed:", err.message);
+    console.error("   Make sure MongoDB is running locally (mongod)");
+    console.error("   or update MONGO_URI in your .env file");
     throw err;
   }
 
   // Ensure DB is connected before every request (handles connection drops)
   app.use(async (req, res, next) => {
-    if (dbReady && mongoose.connection.readyState === 1 && mongoose.connection.db) {
+    if (dbReady && mongoose.connection.readyState === 1) {
       return next();
     }
     try {
-      // Reconnect if needed
       await mongoose.connect(process.env.MONGO_URI, mongooseOptions);
-      await new Promise((resolve) => {
-        if (mongoose.connection.db) return resolve();
-        mongoose.connection.once("open", resolve);
-      });
       dbReady = true;
       next();
     } catch (err) {
