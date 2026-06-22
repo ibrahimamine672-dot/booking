@@ -3,8 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { LogIn, Mail, Lock, Eye, EyeOff, CheckCircle, Building2, Loader2, KeyRound } from 'lucide-react';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { API_BASE } from '../services/api';
 
 export default function Login() {
   const { t } = useTranslation();

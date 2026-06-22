@@ -1,6 +1,6 @@
 // Production: uses VITE_API_URL from .env or Vercel dashboard.
 // Local dev: falls back to localhost:3000 (where the Express backend runs).
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const getToken = () => localStorage.getItem('token');
 
