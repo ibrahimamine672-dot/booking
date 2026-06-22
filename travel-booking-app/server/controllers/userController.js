@@ -86,7 +86,7 @@ exports.forgotPassword = async (req, res) => {
     await user.save();
 
     // Construct reset URL — frontend handles the form
-    const resetUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/reset-password/${resetToken}`;
+    const resetUrl = `${process.env.CLIENT_URL || "https://booking-behm.vercel.app"}/reset-password/${resetToken}`;
 
     const mailOptions = {
       from: `"TravelBook Support" <${EMAIL_USER}>`,
@@ -212,13 +212,9 @@ exports.googleCallback = async (req, res) => {
     // passport.authenticate puts the user on req.user
     if (!req.user) {
       return res.redirect(
-        `${process.env.CLIENT_URL || "http://localhost:5173"}/login?error=google_auth_failed`
-      );
-    }
+`${process.env.CLIENT_URL || "https://booking-behm.vercel.app"}/login?error=google_auth_failed`
 
-    const user = req.user;
-
-    // Generate JWT token
+// Generate JWT token
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
@@ -236,7 +232,7 @@ exports.googleCallback = async (req, res) => {
 
     const encodedUser = encodeURIComponent(JSON.stringify(userData));
     const redirectUrl = `${
-      process.env.CLIENT_URL || "http://localhost:5173"
+      process.env.CLIENT_URL || "https://booking-behm.vercel.app"
     }/oauth-redirect?token=${token}&user=${encodedUser}`;
 
     res.redirect(redirectUrl);
@@ -244,7 +240,7 @@ exports.googleCallback = async (req, res) => {
     console.error("❌ Google callback error:", err.message);
     res.redirect(
       `${
-        process.env.CLIENT_URL || "http://localhost:5173"
+        process.env.CLIENT_URL || "https://booking-behm.vercel.app"
       }/login?error=google_auth_failed`
     );
   }

@@ -26,7 +26,7 @@ router.get(
   "/google/callback",
   passport.authenticate("google", {
     session: false,
-    failureRedirect: `${process.env.CLIENT_URL || "http://localhost:5173"}/login?error=google_auth_failed`,
+    failureRedirect: `${process.env.CLIENT_URL || "https://booking-behm.vercel.app"}/login?error=google_auth_failed`,
   }),
   controller.googleCallback
 );
