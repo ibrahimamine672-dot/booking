@@ -50,32 +50,34 @@ exports.diagnose = async (req, res) => {
 
     // 4. Raw HTTPS test — using Node's built-in https module (not Stripe SDK)
     if (results.dns.ok && results.tcp.ok) {
+      // Use a simple GET request — no extra options that older Node might not support
       results.https = await new Promise((resolve) => {
-        const options = {
-          hostname: "api.stripe.com",
-          path: "/v1/balance",
-          method: "GET",
-          headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` },
-          timeout: 15000,
-          rejectUnauthorized: true,
-        };
-        const req = https.request(options, (res) => {
-          let body = "";
-          res.on("data", (chunk) => (body += chunk));
-          res.on("end", () => {
-            resolve({
-              ok: res.statusCode < 500,
-              statusCode: res.statusCode,
-              bodyPreview: body.slice(0, 120),
-            });
-          });
-        });
-        req.on("error", (err) => resolve({ ok: false, error: err.message }));
-        req.on("timeout", () => {
+        const stripeKey = process.env.STRIPE_SECRET_KEY || "";
+        const authValue = "Bearer " + stripeKey;
+        const req = https.get(
+          {
+            hostname: "api.stripe.com",
+            path: "/v1/balance",
+            headers: { Authorization: authValue },
+          },
+          (res) => {
+            let body = "";
+            res.on("data", (chunk) => (body += chunk));
+            res.on("end", () =>
+              resolve({
+                ok: res.statusCode < 500,
+                statusCode: res.statusCode,
+                bodyPreview: body.slice(0, 120),
+              })
+            );
+            res.on("error", (err) => resolve({ ok: false, error: err.message }));
+          }
+        );
+        req.setTimeout(15000, () => {
           req.destroy();
           resolve({ ok: false, error: "HTTPS request timed out after 15s" });
         });
-        req.end();
+        req.on("error", (err) => resolve({ ok: false, error: err.message }));
       });
     } else {
       results.https = { skipped: true, reason: "prerequisite checks failed" };
