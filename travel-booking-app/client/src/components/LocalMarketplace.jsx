@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { checkout } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import StripeProvider from './StripeProvider';
+import StripeCheckout from './StripeCheckout';
 import { useNavigate } from 'react-router-dom';
 import {
   Coffee,
@@ -66,6 +68,7 @@ export default function LocalMarketplace() {
   const [cart, setCart] = useState([]);
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentError, setPaymentError] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
 
   const currentCategory = CATEGORIES.find((c) => c.id === activeCategory);
 
@@ -106,17 +109,27 @@ export default function LocalMarketplace() {
     setPaymentStatus('loading');
     setPaymentError('');
     try {
-      await checkout(
+      const res = await checkout(
         cart.map((item) => ({ name: item.name, price: item.price, quantity: item.quantity })),
         cartTotal,
         'MAD'
       );
-      setPaymentStatus('success');
-      setCart([]);
+      setClientSecret(res.clientSecret);
+      setPaymentStatus('stripe');
     } catch (err) {
       setPaymentStatus('error');
       setPaymentError(err.message || 'Payment failed. Please try again.');
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    setPaymentStatus('success');
+    setCart([]);
+  };
+
+  const handlePaymentError = (msg) => {
+    setPaymentStatus('error');
+    setPaymentError(msg);
   };
 
   return (
@@ -308,19 +321,28 @@ export default function LocalMarketplace() {
               </div>
             )}
 
-            <button
-              onClick={handleCheckout}
-              disabled={paymentStatus === 'loading'}
-              className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 disabled:from-emerald-300 disabled:to-emerald-300 dark:disabled:from-emerald-800 dark:disabled:to-emerald-800 text-white font-extrabold rounded-2xl transition-all duration-200 text-sm flex items-center justify-center gap-2.5 active:scale-[0.98] shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 disabled:shadow-none"
-            >
-              {paymentStatus === 'loading' ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Traitement...</>
-              ) : !user ? (
-                <><CreditCard className="w-4 h-4" /> Connectez-vous pour payer</>
-              ) : (
-                <><CreditCard className="w-4 h-4" /> Payer {cartTotal} DH</>
-              )}
-            </button>
+            {paymentStatus === 'stripe' && clientSecret ? (
+              <StripeProvider clientSecret={clientSecret}>
+                <StripeCheckout
+                  onSuccess={handlePaymentSuccess}
+                  onError={handlePaymentError}
+                />
+              </StripeProvider>
+            ) : paymentStatus === 'loading' ? (
+              <button
+                disabled
+                className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-emerald-700 text-white font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2.5"
+              >
+                <Loader2 className="w-4 h-4 animate-spin" /> Traitement...
+              </button>
+            ) : (
+              <button
+                onClick={handleCheckout}
+                className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 disabled:from-emerald-300 disabled:to-emerald-300 dark:disabled:from-emerald-800 dark:disabled:to-emerald-800 text-white font-extrabold rounded-2xl transition-all duration-200 text-sm flex items-center justify-center gap-2.5 active:scale-[0.98] shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 disabled:shadow-none"
+              >
+                <CreditCard className="w-4 h-4" /> Payer {cartTotal} DH
+              </button>
+            )}
 
             {!user && (
               <p className="text-xs font-medium text-slate-400 dark:text-slate-500 text-center mt-2">Connectez-vous pour effectuer un paiement.</p>

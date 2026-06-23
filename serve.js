@@ -134,7 +134,11 @@ async function startServer() {
   }
 
   // Ensure DB is connected before every request (handles connection drops)
+  // Skip DB check for health check and payment routes (payment uses Stripe only)
   app.use(async (req, res, next) => {
+    if (req.path === "/api/health" || req.path.startsWith("/api/payment")) {
+      return next();
+    }
     if (dbReady && mongoose.connection.readyState === 1) {
       return next();
     }
