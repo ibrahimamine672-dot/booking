@@ -157,9 +157,12 @@ exports.checkout = async (req, res) => {
       },
     });
 
+    // Stripe SDK returns client_secret (snake_case) — handle both formats
+    const clientSecret = paymentIntent.clientSecret || paymentIntent.client_secret;
+
     res.status(200).json({
       success: true,
-      clientSecret: paymentIntent.clientSecret,
+      clientSecret,
       paymentIntentId: paymentIntent.id,
       amount: totalAmount,
       currency: paymentCurrency,
