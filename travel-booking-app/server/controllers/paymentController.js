@@ -39,8 +39,14 @@ exports.checkout = async (req, res) => {
       currency: paymentCurrency,
     });
   } catch (err) {
-    console.error("Payment error:", err.message);
-    res.status(500).json({ message: "Payment processing failed" });
+    console.error("❌ Payment error:", err);
+    const message =
+      err.message?.includes("STRIPE_SECRET_KEY")
+        ? "Stripe is not configured — set STRIPE_SECRET_KEY in Railway dashboard."
+        : err.type === "StripeInvalidRequestError"
+          ? "Payment request rejected by Stripe. Check your Stripe account and API key."
+          : `Payment failed: ${err.message}`;
+    res.status(500).json({ message });
   }
 };
 
@@ -62,7 +68,11 @@ exports.confirmPayment = async (req, res) => {
       currency: paymentIntent.currency,
     });
   } catch (err) {
-    console.error("Confirm payment error:", err.message);
-    res.status(500).json({ message: "Failed to confirm payment" });
+    console.error("❌ Confirm payment error:", err);
+    const message =
+      err.message?.includes("STRIPE_SECRET_KEY")
+        ? "Stripe is not configured — set STRIPE_SECRET_KEY in Railway dashboard."
+        : `Failed to confirm payment: ${err.message}`;
+    res.status(500).json({ message });
   }
 };
