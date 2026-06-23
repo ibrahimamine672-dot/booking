@@ -46,7 +46,35 @@ exports.diagnose = async (req, res) => {
     ? { ok: true, prefix: process.env.STRIPE_SECRET_KEY.slice(0, 8) + "..." }
     : { ok: false, error: "STRIPE_SECRET_KEY is not set" };
 
-  // 4. Full Stripe SDK test — actually make an API call
+  // 4. Raw HTTPS test — using Node's built-in https module (not Stripe SDK)
+  if (results.dns.ok && results.tcp.ok) {
+    results.https = await new Promise((resolve) => {
+      const req = https.get(
+        "https://api.stripe.com/v1/balance",
+        { headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` }, timeout: 15000 },
+        (res) => {
+          let body = "";
+          res.on("data", (chunk) => (body += chunk));
+          res.on("end", () => {
+            resolve({
+              ok: res.statusCode < 500,
+              statusCode: res.statusCode,
+              bodyPreview: body.slice(0, 120),
+            });
+          });
+        }
+      );
+      req.on("error", (err) => resolve({ ok: false, error: err.message }));
+      req.on("timeout", () => {
+        req.destroy();
+        resolve({ ok: false, error: "HTTPS request timed out after 15s" });
+      });
+    });
+  } else {
+    results.https = { skipped: true, reason: "prerequisite checks failed" };
+  }
+
+  // 5. Full Stripe SDK test — actually make an API call
   if (results.dns.ok && results.tcp.ok && results.stripeKey.ok) {
     try {
       const stripe = getStripe();
@@ -65,8 +93,10 @@ exports.diagnose = async (req, res) => {
     results.sdk = { skipped: true, reason: "prerequisite checks failed" };
   }
 
+  const allOk = results.dns.ok && results.tcp.ok && results.stripeKey.ok && results.https?.ok && results.sdk?.ok;
+
   res.json({
-    stripeReachable: results.dns.ok && results.tcp.ok && results.stripeKey.ok && results.sdk?.ok,
+    stripeReachable: allOk,
     details: results,
     hint:
       !results.dns.ok
@@ -75,9 +105,11 @@ exports.diagnose = async (req, res) => {
           ? "TCP connection failed — Railway is blocking outbound traffic to api.stripe.com:443. Try: (1) Restart the deployment, (2) Deploy to a different region (e.g. us-west), (3) Contact Railway support."
           : !results.stripeKey.ok
             ? "STRIPE_SECRET_KEY is not set in Railway environment variables."
-            : !results.sdk?.ok
-              ? `Stripe SDK connectivity test failed: ${results.sdk?.message || "unknown error"}. This indicates an SSL/TLS or SDK-level issue. Try: (1) Restart the Railway deployment, (2) Set the key type to Live (sk_live_) if using test key in production.`
-              : "All checks passed — Stripe is fully reachable.",
+            : !results.https?.ok
+              ? `Raw HTTPS request to Stripe API failed: ${results.https?.error || "unknown error"}. This means Railway cannot complete an SSL/TLS handshake with api.stripe.com. This is an infrastructure issue with the Railway deployment — try restarting or deploying to a different region.`
+              : !results.sdk?.ok
+                ? `Stripe SDK connectivity test failed (but raw HTTPS works!): ${results.sdk?.message}. This indicates the Stripe npm package has an issue in this environment — possibly the fetch polyfill or HTTP agent.`
+                : "All checks passed — Stripe is fully reachable.",
   });
 };
 
