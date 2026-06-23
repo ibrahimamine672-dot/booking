@@ -5,7 +5,7 @@ const https = require("https");
 const STRIPE_TIMEOUT = 60000;
 
 const getStripe = () => {
-  const key = process.env.STRIPE_SECRET_KEY;
+  const key = (process.env.STRIPE_SECRET_KEY || "").trim();
   if (!key) throw new Error("STRIPE_SECRET_KEY is not set");
   return require("stripe")(key, {
     timeout: STRIPE_TIMEOUT,
@@ -52,7 +52,7 @@ exports.diagnose = async (req, res) => {
     if (results.dns.ok && results.tcp.ok) {
       // Use a simple GET request — no extra options that older Node might not support
       results.https = await new Promise((resolve) => {
-        const stripeKey = process.env.STRIPE_SECRET_KEY || "";
+        const stripeKey = (process.env.STRIPE_SECRET_KEY || "").trim();
         const authValue = "Bearer " + stripeKey;
         const req = https.get(
           {
