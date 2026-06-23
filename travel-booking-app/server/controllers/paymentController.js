@@ -16,43 +16,50 @@ const getStripe = () => {
 
 // Diagnostic endpoint — tests whether Stripe's API is reachable from this server
 exports.diagnose = async (req, res) => {
-  const results = {};
+  // Wrap everything in try/catch so this endpoint NEVER crashes
+  try {
+    const results = {};
 
-  // 1. DNS resolution check
-  results.dns = await new Promise((resolve) => {
-    dns.resolve4("api.stripe.com", (err, addresses) => {
-      if (err) resolve({ ok: false, error: err.message });
-      else resolve({ ok: true, addresses });
+    // 1. DNS resolution check
+    results.dns = await new Promise((resolve) => {
+      dns.resolve4("api.stripe.com", (err, addresses) => {
+        if (err) resolve({ ok: false, error: err.message });
+        else resolve({ ok: true, addresses });
+      });
     });
-  });
 
-  // 2. TCP connectivity check (port 443)
-  results.tcp = await new Promise((resolve) => {
-    const socket = net.createConnection(443, "api.stripe.com", () => {
-      socket.end();
-      resolve({ ok: true });
+    // 2. TCP connectivity check (port 443)
+    results.tcp = await new Promise((resolve) => {
+      const socket = net.createConnection(443, "api.stripe.com", () => {
+        socket.end();
+        resolve({ ok: true });
+      });
+      socket.setTimeout(10000, () => {
+        socket.destroy();
+        resolve({ ok: false, error: "connection timed out after 10s" });
+      });
+      socket.on("error", (err) => {
+        resolve({ ok: false, error: err.message });
+      });
     });
-    socket.setTimeout(10000, () => {
-      socket.destroy();
-      resolve({ ok: false, error: "connection timed out after 10s" });
-    });
-    socket.on("error", (err) => {
-      resolve({ ok: false, error: err.message });
-    });
-  });
 
-  // 3. Stripe API key check
-  results.stripeKey = process.env.STRIPE_SECRET_KEY
-    ? { ok: true, prefix: process.env.STRIPE_SECRET_KEY.slice(0, 8) + "..." }
-    : { ok: false, error: "STRIPE_SECRET_KEY is not set" };
+    // 3. Stripe API key check
+    results.stripeKey = process.env.STRIPE_SECRET_KEY
+      ? { ok: true, prefix: process.env.STRIPE_SECRET_KEY.slice(0, 8) + "..." }
+      : { ok: false, error: "STRIPE_SECRET_KEY is not set" };
 
-  // 4. Raw HTTPS test — using Node's built-in https module (not Stripe SDK)
-  if (results.dns.ok && results.tcp.ok) {
-    results.https = await new Promise((resolve) => {
-      const req = https.get(
-        "https://api.stripe.com/v1/balance",
-        { headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` }, timeout: 15000 },
-        (res) => {
+    // 4. Raw HTTPS test — using Node's built-in https module (not Stripe SDK)
+    if (results.dns.ok && results.tcp.ok) {
+      results.https = await new Promise((resolve) => {
+        const options = {
+          hostname: "api.stripe.com",
+          path: "/v1/balance",
+          method: "GET",
+          headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` },
+          timeout: 15000,
+          rejectUnauthorized: true,
+        };
+        const req = https.request(options, (res) => {
           let body = "";
           res.on("data", (chunk) => (body += chunk));
           res.on("end", () => {
@@ -62,55 +69,63 @@ exports.diagnose = async (req, res) => {
               bodyPreview: body.slice(0, 120),
             });
           });
-        }
-      );
-      req.on("error", (err) => resolve({ ok: false, error: err.message }));
-      req.on("timeout", () => {
-        req.destroy();
-        resolve({ ok: false, error: "HTTPS request timed out after 15s" });
+        });
+        req.on("error", (err) => resolve({ ok: false, error: err.message }));
+        req.on("timeout", () => {
+          req.destroy();
+          resolve({ ok: false, error: "HTTPS request timed out after 15s" });
+        });
+        req.end();
       });
-    });
-  } else {
-    results.https = { skipped: true, reason: "prerequisite checks failed" };
-  }
-
-  // 5. Full Stripe SDK test — actually make an API call
-  if (results.dns.ok && results.tcp.ok && results.stripeKey.ok) {
-    try {
-      const stripe = getStripe();
-      await stripe.balance.retrieve();
-      results.sdk = { ok: true };
-    } catch (err) {
-      results.sdk = {
-        ok: false,
-        errorType: err.type || "Unknown",
-        errorCode: err.code || "",
-        message: err.message,
-        statusCode: err.statusCode,
-      };
+    } else {
+      results.https = { skipped: true, reason: "prerequisite checks failed" };
     }
-  } else {
-    results.sdk = { skipped: true, reason: "prerequisite checks failed" };
+
+    // 5. Full Stripe SDK test — actually make an API call
+    if (results.dns.ok && results.tcp.ok && results.stripeKey.ok) {
+      try {
+        const stripe = getStripe();
+        await stripe.balance.retrieve();
+        results.sdk = { ok: true };
+      } catch (err) {
+        results.sdk = {
+          ok: false,
+          errorType: err.type || "Unknown",
+          errorCode: err.code || "",
+          message: err.message,
+          statusCode: err.statusCode,
+        };
+      }
+    } else {
+      results.sdk = { skipped: true, reason: "prerequisite checks failed" };
+    }
+
+    const allOk = results.dns.ok && results.tcp.ok && results.stripeKey.ok && results.https?.ok && results.sdk?.ok;
+
+    res.json({
+      stripeReachable: allOk,
+      details: results,
+      hint:
+        !results.dns.ok
+          ? "DNS resolution failed — Railway can't resolve api.stripe.com. Try a different deployment region."
+          : !results.tcp.ok
+            ? "TCP connection failed — Railway is blocking outbound traffic to api.stripe.com:443. Try: (1) Restart the deployment, (2) Deploy to a different region (e.g. us-west), (3) Contact Railway support."
+            : !results.stripeKey.ok
+              ? "STRIPE_SECRET_KEY is not set in Railway environment variables."
+              : !results.https?.ok
+                ? `Raw HTTPS request to Stripe API failed: ${results.https?.error || "unknown error"}. This means Railway cannot complete an SSL/TLS handshake with api.stripe.com. This is an infrastructure issue with the Railway deployment — try restarting or deploying to a different region.`
+                : !results.sdk?.ok
+                  ? `Stripe SDK connectivity test failed (but raw HTTPS works!): ${results.sdk?.message}. This indicates the Stripe npm package has an issue in this environment — possibly the fetch polyfill or HTTP agent.`
+                  : "All checks passed — Stripe is fully reachable.",
+    });
+  } catch (err) {
+    console.error("❌ Diagnose endpoint crashed:", err);
+    res.json({
+      stripeReachable: false,
+      details: { error: err.message, stack: err.stack?.split("\n").slice(0, 5).join("\n") },
+      hint: `Diagnostic endpoint itself crashed: ${err.message}. Check Railway logs for details.`,
+    });
   }
-
-  const allOk = results.dns.ok && results.tcp.ok && results.stripeKey.ok && results.https?.ok && results.sdk?.ok;
-
-  res.json({
-    stripeReachable: allOk,
-    details: results,
-    hint:
-      !results.dns.ok
-        ? "DNS resolution failed — Railway can't resolve api.stripe.com. Try a different deployment region."
-        : !results.tcp.ok
-          ? "TCP connection failed — Railway is blocking outbound traffic to api.stripe.com:443. Try: (1) Restart the deployment, (2) Deploy to a different region (e.g. us-west), (3) Contact Railway support."
-          : !results.stripeKey.ok
-            ? "STRIPE_SECRET_KEY is not set in Railway environment variables."
-            : !results.https?.ok
-              ? `Raw HTTPS request to Stripe API failed: ${results.https?.error || "unknown error"}. This means Railway cannot complete an SSL/TLS handshake with api.stripe.com. This is an infrastructure issue with the Railway deployment — try restarting or deploying to a different region.`
-              : !results.sdk?.ok
-                ? `Stripe SDK connectivity test failed (but raw HTTPS works!): ${results.sdk?.message}. This indicates the Stripe npm package has an issue in this environment — possibly the fetch polyfill or HTTP agent.`
-                : "All checks passed — Stripe is fully reachable.",
-  });
 };
 
 exports.checkout = async (req, res) => {
