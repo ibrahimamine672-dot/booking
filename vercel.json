@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd travel-booking-app/client && npm install && npm run build",
+  "outputDirectory": "travel-booking-app/client/dist",
+  "rewrites": [
+    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+  ]
+}
